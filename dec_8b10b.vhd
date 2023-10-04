@@ -52,7 +52,7 @@
 -------------------------------------------------------------------------------
 -- valerix, oct 4 2023 - 1) removed CLK and RESET to have a pure combinational
 --                       code (to be included in a parent module which takes
---                       care of bus interface and input/output registration
+--                       care of bus interface and input/output registration)
 --                       2) added is_comma output
 -------------------------------------------------------------------------------
 
@@ -64,8 +64,8 @@ entity dec_8b10b is
 		AI, BI, CI, DI, EI, II : in std_logic ;
 		FI, GI, HI, JI : in std_logic ; -- Encoded input (LS..MS)		
 		KO : out std_logic ;	-- Control (K) character indicator (AH)
-		HO, GO, FO, EO, DO, CO, BO, AO : out std_logic 	-- Decoded out (MS..LS)
-		is_comma : out std_logic;
+		HO, GO, FO, EO, DO, CO, BO, AO : out std_logic; 	-- Decoded out (MS..LS)
+		is_comma : out std_logic
 	    );
 end dec_8b10b;
 
@@ -202,7 +202,7 @@ begin
 
 	-- comma detector
 	ivect <= AI & BI & CI & DI & EI & II & FI & GI & HI & JI;
-	is_comma <= '1' when  ((ivect=K28_5N) or (ivect=K28_5N)) else '0';
+	is_comma <= '1' when  ((ivect=K28_5N) or (ivect=K28_5P)) else '0';
 
 end behavioral;
 
