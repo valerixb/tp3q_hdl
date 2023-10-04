@@ -53,6 +53,7 @@
 -- valerix, oct 4 2023 - 1) removed CLK and RESET to have a pure combinational
 --                       code (to be included in a parent module which takes
 --                       care of bus interface and input/output registration
+--                       2) added is_comma output
 -------------------------------------------------------------------------------
 
 library IEEE;
@@ -64,10 +65,15 @@ entity dec_8b10b is
 		FI, GI, HI, JI : in std_logic ; -- Encoded input (LS..MS)		
 		KO : out std_logic ;	-- Control (K) character indicator (AH)
 		HO, GO, FO, EO, DO, CO, BO, AO : out std_logic 	-- Decoded out (MS..LS)
+		is_comma : out std_logic;
 	    );
 end dec_8b10b;
 
 architecture behavioral of dec_8b10b is
+
+-- 8b10b comma characters for alignment
+    constant K28_5N : std_logic_vector(9 downto 0) := "0011111010";
+    constant K28_5P : std_logic_vector(9 downto 0) := "1100000101";
 
 -- Signals to tie things together
 	signal ANEB, CNED, EEI, P13, P22, P31 : std_logic ;	-- Figure 10 Signals
@@ -76,6 +82,7 @@ architecture behavioral of dec_8b10b is
 	signal OR121, OR122, OR123, OR124, OR125, OR126, OR127 : std_logic ;
 	signal XF, XG, XH : std_logic ;	-- Figure 13 Signals
 	signal OR131, OR132, OR133, OR134, IOR134 : std_logic ;
+	signal ivect : std_logic_vector(9 downto 0);
 
 begin
 
@@ -192,6 +199,10 @@ begin
 	FO <= XF XOR FI ;	-- Least significant bit 7
 	GO <= XG XOR GI ;
 	HO <= XH XOR HI ;	-- Most significant bit 10
-				
+
+	-- comma detector
+	ivect <= AI & BI & CI & DI & EI & II & FI & GI & HI & JI;
+	is_comma <= '1' when  ((ivect=K28_5N) or (ivect=K28_5N)) else '0';
+
 end behavioral;
 
