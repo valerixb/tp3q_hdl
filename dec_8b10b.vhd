@@ -50,14 +50,16 @@
 -------------------------------------------------------------------------------
 --	This program is licensed under the GPL
 -------------------------------------------------------------------------------
+-- valerix, oct 4 2023 - 1) removed CLK and RESET to have a pure combinational
+--                       code (to be included in a parent module which takes
+--                       care of bus interface and input/output registration
+-------------------------------------------------------------------------------
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 
 entity dec_8b10b is	
     port(
-		RESET : in std_logic ;	-- Global asynchronous reset (AH) 
-		RBYTECLK : in std_logic ;	-- Master synchronous receive byte clock
 		AI, BI, CI, DI, EI, II : in std_logic ;
 		FI, GI, HI, JI : in std_logic ; -- Encoded input (LS..MS)		
 		KO : out std_logic ;	-- Control (K) character indicator (AH)
@@ -111,15 +113,7 @@ begin
 	IKB <= P13 and (not EI and II and GI and HI and JI) ;
 	IKC <= P31 and (EI and not II and not GI and not HI and not JI) ;
 	
-	-- PROCESS: KFN; Determine K output
-	KFN: process (RESET, RBYTECLK, IKA, IKB, IKC)
-	begin
-		if RESET = '1' then
-			KO <= '0';
-		elsif RBYTECLK'event and RBYTECLK = '0' then
-			KO <= IKA or IKB or IKC;
-		end if;
-	end process KFN;
+	KO <= IKA or IKB or IKC;
 	
 	--
 	-- 5b Decoder Figure 12
@@ -160,24 +154,13 @@ begin
 		or OR126
 		or OR127 ; 
 	
-	-- PROCESS: DEC5B; Generate and latch LS 5 decoded bits
-	DEC5B: process (RESET, RBYTECLK, XA, XB, XC, XD, XE, AI, BI, CI, DI, EI)
-	begin
-		if RESET = '1' then
-			AO <= '0' ;
-			BO <= '0' ;
-			CO <= '0' ;
-			DO <= '0' ;
-			EO <= '0' ;
-		elsif RBYTECLK'event and RBYTECLK = '0' then
-			AO <= XA XOR AI ;	-- Least significant bit 0
-			BO <= XB XOR BI ;
-			CO <= XC XOR CI ;
-			DO <= XD XOR DI ;
-			EO <= XE XOR EI ;	-- Most significant bit 6
-		end if;
-	end process DEC5B;
-	
+	AO <= XA XOR AI ;	-- Least significant bit 0
+	BO <= XB XOR BI ;
+	CO <= XC XOR CI ;
+	DO <= XD XOR DI ;
+	EO <= XE XOR EI ;	-- Most significant bit 6
+
+
 	--
 	-- 3b Decoder - Figure 13
 	--
@@ -206,19 +189,9 @@ begin
 	XH <= OR132
 		or OR134 ;
 	
-	-- PROCESS: DEC3B; Generate and latch MS 3 decoded bits
-	DEC3B: process (RESET, RBYTECLK, XF, XG, XH, FI, GI, HI)
-	begin
-		if RESET = '1' then
-			FO <= '0' ;
-			GO <= '0' ;
-			HO <= '0' ;
-		elsif RBYTECLK'event and RBYTECLK ='0' then
-			FO <= XF XOR FI ;	-- Least significant bit 7
-			GO <= XG XOR GI ;
-			HO <= XH XOR HI ;	-- Most significant bit 10
-		end if;
-	end process DEC3B ;
+	FO <= XF XOR FI ;	-- Least significant bit 7
+	GO <= XG XOR GI ;
+	HO <= XH XOR HI ;	-- Most significant bit 10
 				
 end behavioral;
 
