@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="UDPpktzr_tb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="UDPpktzr_tb" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="213.760 ns"></ZoomStartTime>
+      <ZoomEndTime time="376.222 ns"></ZoomEndTime>
+      <Cursor1Time time="329.018 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="155"></NameColumnWidth>
+      <ValueColumnWidth column_width="66"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="16" />
+   <wvobject type="logic" fp_name="/UDPpktzr_tb/aclk">
+      <obj_property name="ElementShortName">aclk</obj_property>
+      <obj_property name="ObjectShortName">aclk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/UDPpktzr_tb/aresetn">
+      <obj_property name="ElementShortName">aresetn</obj_property>
+      <obj_property name="ObjectShortName">aresetn</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/UDPpktzr_tb/m00_axis_tvalid">
+      <obj_property name="ElementShortName">m00_axis_tvalid</obj_property>
+      <obj_property name="ObjectShortName">m00_axis_tvalid</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/UDPpktzr_tb/m00_axis_tdata">
+      <obj_property name="ElementShortName">m00_axis_tdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">m00_axis_tdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/UDPpktzr_tb/m00_axis_tlast">
+      <obj_property name="ElementShortName">m00_axis_tlast</obj_property>
+      <obj_property name="ObjectShortName">m00_axis_tlast</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/UDPpktzr_tb/m00_axis_tready">
+      <obj_property name="ElementShortName">m00_axis_tready</obj_property>
+      <obj_property name="ObjectShortName">m00_axis_tready</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/UDPpktzr_tb/s00_axis_tvalid">
+      <obj_property name="ElementShortName">s00_axis_tvalid</obj_property>
+      <obj_property name="ObjectShortName">s00_axis_tvalid</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/UDPpktzr_tb/s00_axis_tdata">
+      <obj_property name="ElementShortName">s00_axis_tdata[63:0]</obj_property>
+      <obj_property name="ObjectShortName">s00_axis_tdata[63:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/UDPpktzr_tb/s00_axis_tlast">
+      <obj_property name="ElementShortName">s00_axis_tlast</obj_property>
+      <obj_property name="ObjectShortName">s00_axis_tlast</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/UDPpktzr_tb/s00_axis_tready">
+      <obj_property name="ElementShortName">s00_axis_tready</obj_property>
+      <obj_property name="ObjectShortName">s00_axis_tready</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/UDPpktzr_tb/pktzr_enable">
+      <obj_property name="ElementShortName">pktzr_enable</obj_property>
+      <obj_property name="ObjectShortName">pktzr_enable</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/UDPpktzr_tb/s00_axis_tkeep">
+      <obj_property name="ElementShortName">s00_axis_tkeep[7:0]</obj_property>
+      <obj_property name="ObjectShortName">s00_axis_tkeep[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/UDPpktzr_tb/m00_axis_tkeep">
+      <obj_property name="ElementShortName">m00_axis_tkeep[7:0]</obj_property>
+      <obj_property name="ObjectShortName">m00_axis_tkeep[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/UDPpktzr_tb/UDPpacketizer_v1_0_AXIS_inst/watchdog_timer">
+      <obj_property name="ElementShortName">watchdog_timer[31:0]</obj_property>
+      <obj_property name="ObjectShortName">watchdog_timer[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/UDPpktzr_tb/UDPpacketizer_v1_0_AXIS_inst/buf_addr">
+      <obj_property name="ElementShortName">buf_addr[10:0]</obj_property>
+      <obj_property name="ObjectShortName">buf_addr[10:0]</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/UDPpktzr_tb/UDPpacketizer_v1_0_AXIS_inst/sm_exec_state">
+      <obj_property name="ElementShortName">sm_exec_state</obj_property>
+      <obj_property name="ObjectShortName">sm_exec_state</obj_property>
+   </wvobject>
+</wave_config>
