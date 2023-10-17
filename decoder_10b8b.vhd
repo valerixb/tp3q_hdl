@@ -4,7 +4,7 @@
 -- note that TREADY is not needed because we cannot put backpressure
 -- onto the HSSIO RX, which continuously samples the lines, no matter what
 --
--- latest rev oct 4 2023
+-- latest rev oct 17 2023
 --
 
 
@@ -26,6 +26,7 @@ entity decoder_10b8b is
     reset          :  in std_logic;
     in10           :  in std_logic_vector(9 downto 0);
     in10_valid     :  in std_logic;
+    in10_aligned   :  in std_logic;
     out8_valid     : out std_logic;
     out8           : out std_logic_vector(7 downto 0);
     is_comma       : out std_logic
@@ -82,8 +83,8 @@ latch_in: process(clk, reset)
       if(reset='1') then
         in10reg <= (others=>'0');
       else
-        inpvalid_dly<=in10_valid;
-        if(in10_valid='1') then
+        inpvalid_dly<= in10_valid and in10_aligned;
+        if((in10_valid='1') and (in10_aligned='1')) then
           in10reg<=in10;
         end if;
       end if;
