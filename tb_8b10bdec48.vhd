@@ -2,7 +2,7 @@
 -- testbench for Timepix RX channel 
 -- 8b10b decoder + 8 to 48 gearbox
 -- 
--- latest rev by valerix, oct 17 2023
+-- latest rev by valerix, oct 19 2023
 -- 
 ----------------------------------------------------------------------------------
 
@@ -38,19 +38,18 @@ architecture Behavioral of tb_8b10bdec48 is
       );
   end component;
 
-  component project_1_axis_dwidth_converter_0_1 is
-    port (
-      aclk : in STD_LOGIC;
-      aresetn : in STD_LOGIC;
-      s_axis_tvalid : in STD_LOGIC;
-      s_axis_tready : out STD_LOGIC;
-      s_axis_tdata : in STD_LOGIC_VECTOR ( 7 downto 0 );
-      m_axis_tvalid : out STD_LOGIC;
-      m_axis_tready : in STD_LOGIC;
-      m_axis_tdata : out STD_LOGIC_VECTOR ( 47 downto 0 )
-    );
-    end component;
-  
+  component gearbox_8_to_48
+    Port(
+      clk       :  in std_logic;
+      reset     :  in std_logic;
+      in_valid  :  in std_logic;
+      datain    :  in std_logic_vector(7 downto 0);
+      is_comma  :  in std_logic;
+      dataout   : out std_logic_vector(47 downto 0);
+      out_valid : out std_logic
+      );
+  end component;
+    
 
   constant clock_period: time := 6 ns;
   signal stop_the_clock: boolean;
@@ -58,18 +57,16 @@ architecture Behavioral of tb_8b10bdec48 is
   signal aclk     : std_logic;
   signal areset   : std_logic;
   --
-  signal word10   : std_logic_vector(9 downto 0);
-  signal valid10  : std_logic;
-  signal word8    : std_logic_vector(7 downto 0);
-  signal valid8   : std_logic;
-  signal word48   : std_logic_vector(47 downto 0);
-  signal valid48  : std_logic;
-  signal is_comma_i, is_comma_n : std_logic;
-  signal aligned  : std_logic;
+  signal word10     : std_logic_vector(9 downto 0);
+  signal valid10    : std_logic;
+  signal word8      : std_logic_vector(7 downto 0);
+  signal valid8     : std_logic;
+  signal word48     : std_logic_vector(47 downto 0);
+  signal valid48    : std_logic;
+  signal is_comma_i : std_logic;
+  signal aligned    : std_logic;
 
 begin
-
-  is_comma_n <= not is_comma_i;
 
   decoder_inst: component decoder_10b8b
   port map
@@ -84,19 +81,17 @@ begin
     is_comma     => is_comma_i
     );
 
-  dwidth_conv: component project_1_axis_dwidth_converter_0_1
-  port map 
+  gear_8_48: component gearbox_8_to_48
+  port map
     (
-    aclk          => aclk,
-    aresetn       => is_comma_n,
-    m_axis_tdata  => word48,
-    m_axis_tready => '1',
-    m_axis_tvalid => valid48,
-    s_axis_tdata  => word8,
-    s_axis_tready => open,
-    s_axis_tvalid => valid8
+    clk       => aclk,
+    reset     => areset,
+    in_valid  => valid8,
+    datain    => word8,
+    is_comma  => is_comma_i,
+    dataout   => word48,
+    out_valid => valid48
     );
-
 
 
   stimulus: process
@@ -312,6 +307,8 @@ begin
     wait for clock_period;
     word10 <= "0101110011"; -- - 0x6F +
     wait for clock_period;
+
+    valid10        <= '0';
 
     -- now wait for the SM to send out the packet
     wait for clock_period*25;
