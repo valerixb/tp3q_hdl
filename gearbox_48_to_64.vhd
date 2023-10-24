@@ -45,7 +45,7 @@ entity gearbox_48_to_64 is
     out_port_tuser_out   : out std_logic_vector(C_S_AXIS_TUSER_WIDTH-1 downto 0);
     out_port_tkeep_out   : out std_logic_vector(7 downto 0);
     out_port_tstrb_out   : out std_logic_vector(7 downto 0)
-	);
+    );
 end gearbox_48_to_64;
 
 
