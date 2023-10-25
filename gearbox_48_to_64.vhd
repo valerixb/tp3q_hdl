@@ -88,8 +88,13 @@ begin
           in_valid_buf  <= '0';
           --tready_buf    <= out_port_tready_in;
         else
-          in_buf        <= in_port_tdata_in;
-          in_valid_buf  <= in_port_tvalid_in;
+          if( out_port_tready_in='1') then
+            in_buf        <= in_port_tdata_in;
+            in_valid_buf  <= in_port_tvalid_in;
+          else
+            in_buf        <= in_buf;
+            in_valid_buf  <= in_valid_buf;
+          end if;
           --tready_buf    <= out_port_tready_in;
         end if;  -- if not reset
       end if;  -- if clk rising edge

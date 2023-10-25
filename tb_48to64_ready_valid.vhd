@@ -163,6 +163,7 @@ begin
     wait for clock_period;
     --
     -- TVALID=0, TREADY=0 first byte; reassert TREADY first
+    in_port_tdata_in   <= x"060504030201";
     in_port_tvalid_in  <= '0';
     out_port_tready_in <= '0';
     wait for clock_period;
@@ -171,9 +172,6 @@ begin
     wait for clock_period;
     wait for clock_period;
     in_port_tvalid_in  <= '1';
-    wait for clock_period;
-    wait for clock_period;
-    in_port_tdata_in   <= x"060504030201";
     wait for clock_period;
     in_port_tdata_in   <= x"0C0B0A090807";
     wait for clock_period;
@@ -183,6 +181,7 @@ begin
     wait for clock_period;
     --
     -- TVALID=0, TREADY=0 first byte; reassert TVALID first
+    in_port_tdata_in   <= x"060504030201";
     in_port_tvalid_in  <= '0';
     out_port_tready_in <= '0';
     wait for clock_period;
@@ -191,9 +190,6 @@ begin
     wait for clock_period;
     wait for clock_period;
     out_port_tready_in <= '1';
-    wait for clock_period;
-    wait for clock_period;
-    in_port_tdata_in   <= x"060504030201";
     wait for clock_period;
     in_port_tdata_in   <= x"0C0B0A090807";
     wait for clock_period;
@@ -207,6 +203,7 @@ begin
     wait for clock_period;
     in_port_tdata_in   <= x"0C0B0A090807";
     wait for clock_period;
+    in_port_tdata_in   <= x"1211100F0E0D";
     in_port_tvalid_in  <= '0';
     out_port_tready_in <= '0';
     wait for clock_period;
@@ -215,9 +212,6 @@ begin
     wait for clock_period;
     wait for clock_period;
     in_port_tvalid_in  <= '1';
-    wait for clock_period;
-    wait for clock_period;
-    in_port_tdata_in   <= x"1211100F0E0D";
     wait for clock_period;
     in_port_tdata_in   <= x"181716151413";
     wait for clock_period;
@@ -227,6 +221,7 @@ begin
     wait for clock_period;
     in_port_tdata_in   <= x"0C0B0A090807";
     wait for clock_period;
+    in_port_tdata_in   <= x"1211100F0E0D";
     in_port_tvalid_in  <= '0';
     out_port_tready_in <= '0';
     wait for clock_period;
@@ -236,17 +231,9 @@ begin
     wait for clock_period;
     out_port_tready_in <= '1';
     wait for clock_period;
-    wait for clock_period;
-    in_port_tdata_in   <= x"1211100F0E0D";
-    wait for clock_period;
     in_port_tdata_in   <= x"181716151413";
     wait for clock_period;
     --
-
-
-
-
-
 
 
     in_port_tvalid_in  <= '0';
