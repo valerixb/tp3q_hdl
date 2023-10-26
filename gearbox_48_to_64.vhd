@@ -10,7 +10,7 @@
 -- potentially incomplete packets
 -- READY handshake on both sides
 --
--- latest rev oct 24 2023
+-- latest rev oct 26 2023
 --
 
 
@@ -55,15 +55,16 @@ architecture Behavioral of gearbox_48_to_64 is
   type state is ( W1_R3, W2_R1, W3_R2, W4_Rnone);
   signal  sm_exec_state : state := W1_R3;                                                   
 
-  signal circbuf       : std_logic_vector(191 downto 0);
-  signal circbuf_valid : std_logic;
-  signal dataout_buf   : std_logic_vector(63 downto 0);
-  signal in_buf        : std_logic_vector(47 downto 0);
-  signal in_valid_buf  : std_logic := '0';
-  signal tvalid_buf    : std_logic := '0';
-  signal tlast_buf     : std_logic := '0';
-  signal tkeep_buf     : std_logic_vector(7 downto 0) := "11111111";
-  signal tuser_buf     : std_logic_vector(C_S_AXIS_TUSER_WIDTH-1 downto 0) := (others=>'0');
+  signal carry_buf      : std_logic_vector(63 downto 0);
+  signal carrybuf_valid : std_logic;
+  signal carrybuf_keep  : std_logic_vector(7 downto 0) := "11111111";
+  signal dataout_buf    : std_logic_vector(63 downto 0);
+  signal in_buf         : std_logic_vector(47 downto 0);
+  signal in_valid_buf   : std_logic := '0';
+  signal tvalid_buf     : std_logic := '0';
+  signal tlast_buf      : std_logic := '0';
+  signal tkeep_buf      : std_logic_vector(7 downto 0) := "11111111";
+  signal tuser_buf      : std_logic_vector(C_S_AXIS_TUSER_WIDTH-1 downto 0) := (others=>'0');
 
 
 begin
@@ -103,75 +104,80 @@ begin
     begin
       if(rising_edge(clk)) then
         if(resetn='0') then
-          circbuf       <= (others=>'0');
-          circbuf_valid <= '0';
-          dataout_buf   <= (others=>'0');
-          tvalid_buf    <= '0';
-          tlast_buf     <= '0';
-          tuser_buf     <= (others=>'0');
-          tkeep_buf     <= (others=>'1');
-          sm_exec_state <= W1_R3;
+          carry_buf      <= (others=>'0');
+          carrybuf_valid <= '0';
+          carrybuf_keep  <= (others=>'1');
+          dataout_buf    <= (others=>'0');
+          tvalid_buf     <= '0';
+          tlast_buf      <= '0';
+          tuser_buf      <= (others=>'0');
+          tkeep_buf      <= (others=>'1');
+          sm_exec_state  <= W1_R3;
 
         else
-        if((out_port_tready_in='1') and (in_valid_buf='1')) then
+          if((out_port_tready_in='1') and (in_valid_buf='1')) then
             case(sm_exec_state) is
 
               when W1_R3 =>
-                circbuf( 47 downto  0) <= in_buf;
-                -- data in circular buffer is valid only after first write to W1 position
-                circbuf_valid <= '1';
-                if( circbuf_valid='1' ) then
-                  dataout_buf <= circbuf( 191 downto 128);
+                carry_buf( 47 downto  0) <= in_buf;
+                carry_buf( 63 downto 48) <= (others=>'0');
+                carrybuf_keep  <= "00111111";
+                -- data in carry buffer is valid only after first write to W1 position
+                carrybuf_valid <= '1';
+                if( carrybuf_valid='1' ) then
+                  dataout_buf <= carry_buf;
                   tvalid_buf  <= '1';
-                  -- generate a TLAST when circular buffer wraps
+                  -- generate a TLAST when an integer number of 48-bit words has been transmitted
                   tlast_buf   <= '1';
                 else
                   dataout_buf <= (others => '0');
                   tvalid_buf  <= '0';
                   tlast_buf   <= '0';
-              end if;
-                circbuf( 191 downto 128) <= (others => '0');
+                end if;
                 tuser_buf     <= (others=>'0');
                 tkeep_buf     <= (others=>'1');
                 sm_exec_state <= W2_R1;
 
               when W2_R1 =>
-                circbuf(95 downto 64) <= in_buf(47 downto 16);
-                circbuf_valid <= circbuf_valid;
-                if( circbuf_valid='1' ) then
-                  dataout_buf( 47 downto   0) <= circbuf( 47 downto   0);
-                  dataout_buf( 63 downto  48) <=  in_buf( 15 downto   0);
+                carry_buf( 31 downto  0) <= in_buf( 47 downto 16);
+                carry_buf( 63 downto 32) <= (others=>'0');
+                carrybuf_keep  <= "00001111";
+                carrybuf_valid <= carrybuf_valid;
+                if( carrybuf_valid='1' ) then
+                  dataout_buf( 47 downto   0) <= carry_buf( 47 downto   0);
+                  dataout_buf( 63 downto  48) <= in_buf( 15 downto   0);
                   tvalid_buf  <= '1';
                 else
                   dataout_buf <= (others => '0');
                   tvalid_buf  <= '0';
                 end if;
-                circbuf(  63 downto   0) <= (others => '0');
                 tlast_buf     <= '0';
                 tuser_buf     <= (others=>'0');
                 tkeep_buf     <= (others=>'1');
                 sm_exec_state <= W3_R2;
 
               when W3_R2 =>
-                circbuf( 143 downto 128) <= in_buf(47 downto 32);
-                circbuf_valid <= circbuf_valid;
-                if( circbuf_valid='1' ) then
-                  dataout_buf( 31 downto   0) <= circbuf( 95 downto  64);
+                carry_buf( 15 downto  0) <= in_buf( 47 downto 32);
+                carry_buf( 63 downto 16) <= (others=>'0');
+                carrybuf_keep  <= "00000011";
+                carrybuf_valid <= carrybuf_valid;
+                if( carrybuf_valid='1' ) then
+                  dataout_buf( 31 downto   0) <= carry_buf( 31 downto  0);
                   dataout_buf( 63 downto  32) <=  in_buf( 31 downto   0);
                   tvalid_buf  <= '1';
                 else
                   dataout_buf <= (others => '0');
                   tvalid_buf  <= '0';
                 end if;
-                circbuf( 127 downto  64) <= (others => '0');
                 tlast_buf     <= '0';
                 tuser_buf     <= (others=>'0');
                 tkeep_buf     <= (others=>'1');
                 sm_exec_state <= W4_Rnone;
 
               when W4_Rnone =>
-                circbuf( 191 downto 144) <= in_buf;
-                circbuf_valid <= circbuf_valid;
+                carry_buf( 63 downto 16) <= in_buf;
+                carrybuf_valid <= carrybuf_valid;
+                carrybuf_keep  <= "11111111";
                 dataout_buf <= dataout_buf;
                 tvalid_buf  <= '0';                
                 tlast_buf     <= '0';
@@ -180,26 +186,26 @@ begin
                 sm_exec_state <= W1_R3;
 
               when others =>
-                circbuf       <= circbuf;
-                circbuf_valid <= '0';
-                dataout_buf   <= dataout_buf;
-                tvalid_buf    <= '0';
-                tlast_buf     <= '0';
-                tuser_buf     <= (others=>'0');
-                tkeep_buf     <= (others=>'1');
-                sm_exec_state <= W1_R3;
+                carry_buf      <= carry_buf;
+                carrybuf_valid <= '0';
+                dataout_buf    <= dataout_buf;
+                tvalid_buf     <= '0';
+                tlast_buf      <= '0';
+                tuser_buf      <= (others=>'0');
+                tkeep_buf      <= (others=>'1');
+                sm_exec_state  <= W1_R3;
 
             end case;
           else
             -- if input not valid or ouput not ready, just hold on
-            circbuf       <= circbuf;
-            circbuf_valid <= circbuf_valid;
-            dataout_buf   <= dataout_buf;
-            tvalid_buf    <= tvalid_buf and not out_port_tready_in;
-            tlast_buf     <= tlast_buf;
-            tuser_buf     <= tuser_buf;
-            tkeep_buf     <= tkeep_buf;
-            sm_exec_state <= sm_exec_state;            
+            carry_buf      <= carry_buf;
+            carrybuf_valid <= carrybuf_valid;
+            dataout_buf    <= dataout_buf;
+            tvalid_buf     <= tvalid_buf and not out_port_tready_in;
+            tlast_buf      <= tlast_buf;
+            tuser_buf      <= tuser_buf;
+            tkeep_buf      <= tkeep_buf;
+            sm_exec_state  <= sm_exec_state;            
           end if; -- if input valid & output ready
         end if;  -- if not reset
       end if;  -- if clk rising edge
