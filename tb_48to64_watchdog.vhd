@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------------
 -- testbench for 48/64 gearbox
 --
--- TREADY/TVALID management check 
+-- watchdog timeout if timepix stops transmitting 
 --
 -- latest rev by valerix, oct 26 2023
 -- 
@@ -20,12 +20,12 @@ use IEEE.NUMERIC_STD.ALL;
 --library UNISIM;
 --use UNISIM.VComponents.all;
 
-entity tb_48to64_ready_valid is
+entity tb_48to64_watchdog is
 --  Generic ( );
 --  Port ( );
-end tb_48to64_ready_valid;
+end tb_48to64_watchdog;
 
-architecture Behavioral of tb_48to64_ready_valid is
+architecture Behavioral of tb_48to64_watchdog is
 
 component gearbox_48_to_64 is
   generic(
@@ -70,6 +70,7 @@ end component gearbox_48_to_64;
 
 
 begin
+
   gear48to64 : gearbox_48_to_64
     generic map(
       C_S_AXIS_TUSER_WIDTH  => 16
@@ -78,7 +79,8 @@ begin
       clk                  => aclk,
       resetn               => aresetn,
       -- 160000 clock ticks at 160 MHz - 1ms
-      watchdog_timeout     => std_logic_vector(to_unsigned(160000,32)),
+      -- use only 10 cycles as timeout for simulation
+      watchdog_timeout     => std_logic_vector(to_unsigned(10,32)),
       --
       in_port_tready_out   => in_port_tready_out,
       in_port_tdata_in     => in_port_tdata_in,
@@ -120,27 +122,13 @@ begin
     wait for clock_period;
     in_port_tdata_in   <= x"181716151413";
     wait for clock_period;
-    --
-    -- TVALID=1, TREADY=0
-    in_port_tdata_in   <= x"060504030201";
-    out_port_tready_in  <= '0';
-    wait for clock_period;
-    in_port_tdata_in   <= x"060504030201";
-    wait for clock_period;
-    in_port_tdata_in   <= x"060504030201";
-    out_port_tready_in  <= '1';
-    wait for clock_period;
-    in_port_tdata_in   <= x"0C0B0A090807";
-    wait for clock_period;
-    in_port_tdata_in   <= x"1211100F0E0D";
-    wait for clock_period;
-    in_port_tdata_in   <= x"181716151413";
-    wait for clock_period;
-    --
-    -- TVALID=0, TREADY=1 at first byte
+    in_port_tdata_in   <= x"000000000000";
     in_port_tvalid_in  <= '0';
-    wait for clock_period;
-    wait for clock_period;
+    --
+    -- timeout after the last
+    wait for 15*clock_period;
+    --
+    -- another packet 
     in_port_tdata_in   <= x"060504030201";
     in_port_tvalid_in  <= '1';
     wait for clock_period;
@@ -150,93 +138,69 @@ begin
     wait for clock_period;
     in_port_tdata_in   <= x"181716151413";
     wait for clock_period;
-    --
-    -- again TVALID=0, TREADY=1 but not at first byte
-    in_port_tdata_in   <= x"060504030201";
-    wait for clock_period;
-    in_port_tdata_in   <= x"0C0B0A090807";
-    wait for clock_period;
+    in_port_tdata_in   <= x"000000000000";
     in_port_tvalid_in  <= '0';
-    wait for clock_period;
-    wait for clock_period;
-    in_port_tdata_in   <= x"1211100F0E0D";
+    --
+    -- timeout after the last
+    wait for 15*clock_period;
+
+    -- another packet; timeout after the first
+    in_port_tdata_in   <= x"060504030201";
     in_port_tvalid_in  <= '1';
     wait for clock_period;
-    in_port_tdata_in   <= x"181716151413";
-    wait for clock_period;
-    --
-    -- TVALID=0, TREADY=0 first byte; reassert TREADY first
-    in_port_tdata_in   <= x"060504030201";
+    in_port_tdata_in   <= x"000000000000";
     in_port_tvalid_in  <= '0';
-    out_port_tready_in <= '0';
-    wait for clock_period;
-    wait for clock_period;
-    out_port_tready_in <= '1';
-    wait for clock_period;
-    wait for clock_period;
+    --
+    -- 
+    wait for 15*clock_period;
+
+    -- another packet; timeout after the second
+    in_port_tdata_in   <= x"060504030201";
     in_port_tvalid_in  <= '1';
     wait for clock_period;
     in_port_tdata_in   <= x"0C0B0A090807";
     wait for clock_period;
-    in_port_tdata_in   <= x"1211100F0E0D";
-    wait for clock_period;
-    in_port_tdata_in   <= x"181716151413";
-    wait for clock_period;
-    --
-    -- TVALID=0, TREADY=0 first byte; reassert TVALID first
-    in_port_tdata_in   <= x"060504030201";
+    in_port_tdata_in   <= x"000000000000";
     in_port_tvalid_in  <= '0';
-    out_port_tready_in <= '0';
-    wait for clock_period;
-    wait for clock_period;
+    --
+    -- 
+    wait for 15*clock_period;
+
+    -- another packet; timeout after the third
+    in_port_tdata_in   <= x"060504030201";
     in_port_tvalid_in  <= '1';
     wait for clock_period;
-    wait for clock_period;
-    out_port_tready_in <= '1';
-    wait for clock_period;
     in_port_tdata_in   <= x"0C0B0A090807";
     wait for clock_period;
     in_port_tdata_in   <= x"1211100F0E0D";
     wait for clock_period;
-    in_port_tdata_in   <= x"181716151413";
-    wait for clock_period;
+    in_port_tdata_in   <= x"000000000000";
+    in_port_tvalid_in  <= '0';
     --
-    -- TVALID=0, TREADY=0 second byte (where output valid goes low); reassert TREADY first
+    -- 
+    wait for 15*clock_period;
+
+    -- now again timeout after the third, but receiver not ready
     in_port_tdata_in   <= x"060504030201";
+    in_port_tvalid_in  <= '1';
     wait for clock_period;
     in_port_tdata_in   <= x"0C0B0A090807";
     wait for clock_period;
     in_port_tdata_in   <= x"1211100F0E0D";
+    wait for clock_period;
+    in_port_tdata_in   <= x"000000000000";
     in_port_tvalid_in  <= '0';
     out_port_tready_in <= '0';
-    wait for clock_period;
-    wait for clock_period;
-    out_port_tready_in <= '1';
-    wait for clock_period;
-    wait for clock_period;
-    in_port_tvalid_in  <= '1';
-    wait for clock_period;
-    in_port_tdata_in   <= x"181716151413";
-    wait for clock_period;
     --
-    -- TVALID=0, TREADY=0 second byte (where output valid goes low); reassert TVALID first
-    in_port_tdata_in   <= x"060504030201";
-    wait for clock_period;
-    in_port_tdata_in   <= x"0C0B0A090807";
-    wait for clock_period;
-    in_port_tdata_in   <= x"1211100F0E0D";
-    in_port_tvalid_in  <= '0';
+    -- here the watchdog should be kept reset, because we still have 1 word to transmit
+    wait for 15*clock_period;
+    out_port_tready_in <= '1';
+    wait for 3*clock_period;
     out_port_tready_in <= '0';
-    wait for clock_period;
-    wait for clock_period;
-    in_port_tvalid_in  <= '1';
-    wait for clock_period;
-    wait for clock_period;
+    -- here the watchdog should start
+    wait for 15*clock_period;
     out_port_tready_in <= '1';
-    wait for clock_period;
-    in_port_tdata_in   <= x"181716151413";
-    wait for clock_period;
-    --
+    wait for 3*clock_period;
 
 
     in_port_tvalid_in  <= '0';

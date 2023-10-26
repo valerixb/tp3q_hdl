@@ -19,7 +19,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
+use IEEE.NUMERIC_STD.ALL;
+---use ieee.math_real.all;
 
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx leaf cells in this code.
@@ -33,6 +34,7 @@ entity gearbox_48_to_64 is
   port(
     clk                  : in std_logic;
     resetn               : in std_logic;
+    watchdog_timeout     : in std_logic_vector(31 downto 0);
     --
     in_port_tready_out   : out std_logic;
     in_port_tdata_in     :  in std_logic_vector(47 downto 0);
@@ -65,6 +67,9 @@ architecture Behavioral of gearbox_48_to_64 is
   signal tlast_buf      : std_logic := '0';
   signal tkeep_buf      : std_logic_vector(7 downto 0) := "11111111";
   signal tuser_buf      : std_logic_vector(C_S_AXIS_TUSER_WIDTH-1 downto 0) := (others=>'0');
+  signal watchdog_timer : unsigned(31 downto 0);
+  signal watchdog_reset : std_logic;
+
 
 
 begin
@@ -112,10 +117,12 @@ begin
           tlast_buf      <= '0';
           tuser_buf      <= (others=>'0');
           tkeep_buf      <= (others=>'1');
+          watchdog_reset <= '1';
           sm_exec_state  <= W1_R3;
 
         else
           if((out_port_tready_in='1') and (in_valid_buf='1')) then
+            watchdog_reset <= '1';
             case(sm_exec_state) is
 
               when W1_R3 =>
@@ -198,19 +205,59 @@ begin
             end case;
           else
             -- if input not valid or ouput not ready, just hold on
-            carry_buf      <= carry_buf;
-            carrybuf_valid <= carrybuf_valid;
-            dataout_buf    <= dataout_buf;
-            tvalid_buf     <= tvalid_buf and not out_port_tready_in;
-            tlast_buf      <= tlast_buf;
-            tuser_buf      <= tuser_buf;
-            tkeep_buf      <= tkeep_buf;
-            sm_exec_state  <= sm_exec_state;            
+            -- 
+            -- let the watchdog timer run only if we are waiting for data from Timepix;
+            -- if we are kept in hold by the packetizer, wait forever (it has its own timeout)
+            
+            if( watchdog_timer = x"00000000") then
+              watchdog_reset <= '1';
+              carry_buf      <= (others=>'0');
+              carrybuf_valid <= '0';
+              if( carrybuf_valid = '1' ) then
+                dataout_buf    <= carry_buf;
+                tvalid_buf     <= '1';
+                tlast_buf      <= '1';
+                tuser_buf      <= std_logic_vector(to_unsigned(1, C_S_AXIS_TUSER_WIDTH));
+                tkeep_buf      <= carrybuf_keep;
+              else
+                dataout_buf    <= dataout_buf;
+                tvalid_buf     <= tvalid_buf and not out_port_tready_in;
+                tlast_buf      <= tlast_buf;
+                tuser_buf      <= tuser_buf;
+                tkeep_buf      <= tkeep_buf;
+              end if;
+              sm_exec_state  <= W1_R3;
+            else
+              watchdog_reset <= in_valid_buf;
+              carry_buf      <= carry_buf;
+              carrybuf_valid <= carrybuf_valid;
+              dataout_buf    <= dataout_buf;
+              tvalid_buf     <= tvalid_buf and not out_port_tready_in;
+              tlast_buf      <= tlast_buf;
+              tuser_buf      <= tuser_buf;
+              tkeep_buf      <= tkeep_buf;
+              sm_exec_state  <= sm_exec_state;
+            end if;  -- if watchdog timeout            
           end if; -- if input valid & output ready
         end if;  -- if not reset
       end if;  -- if clk rising edge
     end process state_machine;
 
+
+	watchdog: process(clk)
+	begin
+	  if (rising_edge (clk)) then
+	    if(watchdog_reset = '1') then                                                           
+	      watchdog_timer <= unsigned(watchdog_timeout);
+	    else
+	      if(watchdog_timer /= x"00000000") then
+	        watchdog_timer <= watchdog_timer -1;
+	      else
+	        watchdog_timer <= x"00000000";
+	      end if;  -- if expired
+	    end if;  -- if not reset
+      end if; -- if clock edge
+	end process watchdog;
 
 
 end Behavioral;
