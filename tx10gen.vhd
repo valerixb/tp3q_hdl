@@ -3,7 +3,7 @@
 -- user can choose to transmit a packet or 
 -- a pseudorandom bit sequence
 --
--- latest rev jun 9 2023
+-- latest rev oct 30 2023
 --
 
 library ieee;
@@ -25,7 +25,7 @@ end tx10gen;
 
 architecture implementation of tx10gen is
   
-  constant NUMBER_OF_OUTPUT_WORDS : integer := 5;
+  constant NUMBER_OF_OUTPUT_WORDS : integer := 7;
   type pkt_arr is array (0 to NUMBER_OF_OUTPUT_WORDS-1) of 
     std_logic_vector(9 downto 0);
   
@@ -43,10 +43,12 @@ architecture implementation of tx10gen is
   constant pkt_to_send : pkt_arr :=
     (
     "0011111010",  -- K28.5- comma character for alignment
-    "0101010101",
-    "1010101010",
-    "1100110011",
-    "0001111000"
+    "0101100100",  -- 0x1A
+    "1101001001",  -- 0x2B
+    "0011101001",  -- 0x3C
+    "1011000101",  -- 0x4D
+    "0111100101",  -- 0x5E
+    "1010001100"   -- 0x6F
     );
 
   -- component prbs_any from Xilinx XAPP884
