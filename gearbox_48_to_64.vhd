@@ -10,7 +10,7 @@
 -- potentially incomplete packets
 -- READY handshake on both sides
 --
--- latest rev oct 26 2023
+-- latest rev oct 30 2023
 --
 
 
@@ -34,11 +34,11 @@ entity gearbox_48_to_64 is
   port(
     clk                  : in std_logic;
     resetn               : in std_logic;
-    watchdog_timeout     : in std_logic_vector(31 downto 0);
+    --watchdog_timeout     : in std_logic_vector(31 downto 0);
     --
     in_port_tready_out   : out std_logic;
-    in_port_tdata_in     :  in std_logic_vector(47 downto 0);
     in_port_tvalid_in    :  in std_logic;
+    in_port_tdata_in     :  in std_logic_vector(47 downto 0);
     --
     out_port_tready_in   :  in std_logic;
     out_port_tdata_out   : out std_logic_vector(63 downto 0);
@@ -55,6 +55,10 @@ architecture Behavioral of gearbox_48_to_64 is
 
   -- State machine                                             
   type state is ( W1_R3, W2_R1, W3_R2, W4_Rnone);
+  
+  -- half a millisecond timeout at 160 MHz is 80'000 cycles
+  constant watchdog_timeout     : std_logic_vector(31 downto 0) := std_logic_vector(to_unsigned(80000,32));
+  
   signal  sm_exec_state : state := W1_R3;                                                   
 
   signal carry_buf      : std_logic_vector(63 downto 0);
