@@ -134,7 +134,7 @@ architecture implementation of UDPpacketizer_v1_0_AXIS is
     signal saved_dest_mac           : std_logic_vector(47 downto 0);
     signal saved_dest_port          : std_logic_vector(15 downto 0);
 
-    signal pkt_index, last_pkt_index  : integer;
+    signal pkt_index, last_pkt_index, substep  : integer;
     -- CRC is done on 16 bit word; we use a 32 bit accum to have space for max packet + some slack
     -- IP length is just UDP_length + 20 (bytes)
     signal UDP_length     : integer;
@@ -269,6 +269,7 @@ begin
 	          -- data will start from index 6
               --pkt_index <= 6-1;
               pkt_index <= FIRST_PAYLOAD_INDEX-1;
+              substep <= 0;
               buf_we <= '0';
               buf_init <= '0';
 	          busy <= '0';
@@ -312,6 +313,7 @@ begin
 	          busy <= '0';
 	          -- set to 0 the minimum ethernet packet, in case we have to add padding
 	          pkt_index<= pkt_index+1;
+              substep <= 0;
 	          rx_ready <= '0';
 
               -- initialize IP CRC with known data
@@ -351,6 +353,7 @@ begin
             --*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 	        when WAIT_ENABLE =>
+              substep <= 0;
               buf_we <= '0';
               rx_ready <= '0';
 	          busy <= '0';
@@ -365,6 +368,7 @@ begin
 	        when FILLING_PKT =>
 	          busy <= '0';
 	          rx_ready <= '1';
+              substep <= 0;
 	          
 	          if((rx_valid='1') and (rx_ready='1')) then
 	            watchdog_reset <= '1';
@@ -460,13 +464,14 @@ begin
 	          
 	          -- now fill headers, calculating actual lengths and CRC
 	          -- already do host2net
-	          -- fill one word per clock cycle
+	          -- fill one word per clock cycle [EDIT] no more: to close the timing, we use multiple
+	          -- clock ticks to fill some words
 	          -- note that we prepare the data for NEXT word in buffer
 	          -- so word#0 is calculated in case "others", which is when the packet index
 	          -- is pointing into the payload and not into the headers, that corresponds
 	          -- to its value when we first enter present state "CALC_CRC" of the state machine
 
-	          pkt_index<= pkt_index+1;
+	          --pkt_index<= pkt_index+1;
 	          case( pkt_index+1 ) is
 	            
 	            when 1 =>
@@ -487,6 +492,8 @@ begin
 	              buf_di <= pkt_word;
 	              ----------------------------------------------------
 	              sm_exec_state <= CALC_CRC;
+	              pkt_index<= pkt_index+1;
+	              substep <= 0;
 
   	            when 2 =>
                   -- IP length
@@ -505,6 +512,8 @@ begin
   	              buf_di <= pkt_word;
   	              ----------------------------------------------------
   	              sm_exec_state <= CALC_CRC;
+  	              pkt_index<= pkt_index+1;
+  	              substep <= 0;
 
 	            when 3 =>
 	              -- IP CRC
@@ -526,6 +535,8 @@ begin
 	              buf_di <= pkt_word;
 	              ----------------------------------------------------
 	              sm_exec_state <= CALC_CRC;
+	              pkt_index<= pkt_index+1;
+	              substep <= 0;
 	            
 	            when 4 =>
 	              pkt_word( 7 downto  0) := saved_dest_ip(15 downto  8);
@@ -545,38 +556,49 @@ begin
 	              buf_di <= pkt_word;
 	              ----------------------------------------------------
 	              sm_exec_state <= CALC_CRC;
+	              pkt_index<= pkt_index+1;
+	              substep <= 0;
 	            
 	            when 5 =>
 	              -- UDP CRC
                   -- UDP CRC was initialized in the PREPARE_PADDING state: now add length and pkt_counter
                   -- note that, for CRC calculation, pkt counter must not get a host2net
-                  len_aux := to_unsigned(UDP_length,16);
-                  -- UDP length will be added twice for IP pseudo header
-                  CRC_aux := UDP_CRC + 2*len_aux + 
-                             pkt_counter(39 downto 24) + pkt_counter(23 downto  8) +
-                             (pkt_counter( 7 downto  0) & unsigned(saved_tid));
-	              CRC_aux := resize( CRC_aux(31 downto 16) + CRC_aux(15 downto 0) ,32);
-	              CRC_aux := not CRC_aux;
-                  pkt_word( 7 downto  0) := std_logic_vector(CRC_aux(15 downto  8));
-                  pkt_word(15 downto  8) := std_logic_vector(CRC_aux( 7 downto  0));
-	              -- pad with 5 bytes (0x00) + 1 byte of ID, so we are 64-bit aligned
-	              --pkt_word(55 downto 16) := x"0000000000";
-	              -- replace with a 5-byte counter + 1 byte of ID, so we are 64-bit aligned
-	              -- and the packet counter helps detecting lost packets on the receiving side
-	              -- remember to make a host2net of the counter for transmission
-	              pkt_word(23 downto 16) := std_logic_vector(pkt_counter(39 downto 32));
-	              pkt_word(31 downto 24) := std_logic_vector(pkt_counter(31 downto 24));
-	              pkt_word(39 downto 32) := std_logic_vector(pkt_counter(23 downto 16));
-	              pkt_word(47 downto 40) := std_logic_vector(pkt_counter(15 downto  8));
-	              pkt_word(55 downto 48) := std_logic_vector(pkt_counter( 7 downto  0));
-	              pkt_word(63 downto 56) := saved_tid;
-	              --the_packet(5) <= pkt_word;
-	              buf_di <= pkt_word;
-	              ----------------------------------------------------
+                  -- split CRC calculation into 2 steps to close timing
+                  if(substep=0) then
+                    substep <= 1;
+                    pkt_index<= pkt_index;  -- do not increment packet index during substeps
+                    len_aux := to_unsigned(UDP_length,16);
+                    -- UDP length will be added twice for IP pseudo header
+                    UDP_CRC <= UDP_CRC + 2*len_aux + 
+                               pkt_counter(39 downto 24) + pkt_counter(23 downto  8) +
+                               (pkt_counter( 7 downto  0) & unsigned(saved_tid));
+                  else
+                    substep <= 0;  -- reset substep counter
+                    pkt_index<= pkt_index+1;
+	                CRC_aux := resize( UDP_CRC(31 downto 16) + UDP_CRC(15 downto 0) ,32);
+	                CRC_aux := not CRC_aux;
+                    pkt_word( 7 downto  0) := std_logic_vector(CRC_aux(15 downto  8));
+                    pkt_word(15 downto  8) := std_logic_vector(CRC_aux( 7 downto  0));
+  	                -- pad with 5 bytes (0x00) + 1 byte of ID, so we are 64-bit aligned
+	                --pkt_word(55 downto 16) := x"0000000000";
+	                -- replace with a 5-byte counter + 1 byte of ID, so we are 64-bit aligned
+	                -- and the packet counter helps detecting lost packets on the receiving side
+	                -- remember to make a host2net of the counter for transmission
+                    pkt_word(23 downto 16) := std_logic_vector(pkt_counter(39 downto 32));
+                    pkt_word(31 downto 24) := std_logic_vector(pkt_counter(31 downto 24));
+                    pkt_word(39 downto 32) := std_logic_vector(pkt_counter(23 downto 16));
+                    pkt_word(47 downto 40) := std_logic_vector(pkt_counter(15 downto  8));
+	                pkt_word(55 downto 48) := std_logic_vector(pkt_counter( 7 downto  0));
+	                pkt_word(63 downto 56) := saved_tid;
+	                --the_packet(5) <= pkt_word;
+	                buf_di <= pkt_word;
+	                ----------------------------------------------------
+	              end if;
 	              sm_exec_state <= CALC_CRC;
 	              
                 when 6 =>
 	              pkt_index <= 0;
+	              substep <= 0;
 	              buf_we <= '0';
 	              buf_init <= '1';
                   -- BRAM out has 1 clock cycle of latency
@@ -612,6 +634,7 @@ begin
                   --the_packet(0) <= pkt_word;
                   buf_di <= pkt_word;
                   pkt_index<= 0;
+                  substep <= 0;
                   ----------------------------------------------------
                   sm_exec_state <= CALC_CRC;
 	                                                                                            
