@@ -9,12 +9,12 @@ entity UDPpacketizer_v1_0_AXIS is
         MTU                     : integer	:= 9000;
 	    -- stream master intf
 		C_M_AXIS_TDATA_WIDTH    : integer	:= 64;
-		C_M_AXIS_TUSER_WIDTH    : integer	:= 16;
+		C_M_AXIS_TUSER_WIDTH    : integer	:= 1;
 		C_M_AXIS_TID_WIDTH      : integer	:= 8;
 		C_M_AXIS_TDEST_WIDTH    : integer	:= 4;
         -- stream slave intf
 		C_S_AXIS_TDATA_WIDTH	: integer	:= 64;
-		C_S_AXIS_TUSER_WIDTH    : integer	:= 16;
+		C_S_AXIS_TUSER_WIDTH    : integer	:= 1;
 		C_S_AXIS_TID_WIDTH      : integer	:= 8;
 		C_S_AXIS_TDEST_WIDTH    : integer	:= 4;
 		-- width of command registers coming from control axi-lite interface
@@ -400,7 +400,9 @@ begin
 	              -- store tkeep value to be used for packet retransmission
 	              saved_tkeep <= S_AXIS_TKEEP;
 	              --
-	              saved_tuser <= S_AXIS_TUSER;
+	              --saved_tuser <= S_AXIS_TUSER;
+				  -- put output TUSER to 0, otherwise xxv IP thinks it's an error code
+				  saved_tuser <= (others => '0');
                   saved_tid   <= S_AXIS_TID;
                   saved_tdest <= S_AXIS_TDEST;
 

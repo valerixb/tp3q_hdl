@@ -10,7 +10,7 @@
 -- potentially incomplete packets
 -- READY handshake on both sides
 --
--- latest rev oct 30 2023
+-- latest rev nov 6 2023
 --
 
 
@@ -29,7 +29,7 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity gearbox_48_to_64 is
   generic(
-    C_S_AXIS_TUSER_WIDTH  : integer	:= 16
+    C_S_AXIS_TUSER_WIDTH  : integer	:= 1
     );
   port(
     clk                  : in std_logic;

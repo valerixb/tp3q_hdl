@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 entity streamgen_v1_0_M00_AXIS is
 	generic (
 		C_M_AXIS_TDATA_WIDTH  : integer	:= 64;
-		C_M_AXIS_TUSER_WIDTH  : integer	:= 16;
+		C_M_AXIS_TUSER_WIDTH  : integer	:= 1;
 		C_M_AXIS_TID_WIDTH    : integer	:= 8;
 		C_M_AXIS_TDEST_WIDTH  : integer	:= 4;
 		-- width of command registers coming from control axi-lite interface
