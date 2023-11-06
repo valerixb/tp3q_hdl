@@ -667,9 +667,6 @@ begin
 	          rx_ready <= '0';
               tx_valid <= '1';
 	          watchdog_reset <= '1';
-	          M_AXIS_TUSER <= saved_tuser;
-              M_AXIS_TID   <= saved_tid;
-              M_AXIS_TDEST <= saved_tdest;
 
 	          if( tx_ready='1' ) then
   	            if( pkt_index = last_pkt_index ) then
