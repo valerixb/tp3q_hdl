@@ -138,7 +138,7 @@ architecture implementation of UDPpacketizer_v1_0_AXIS is
     -- CRC is done on 16 bit word; we use a 32 bit accum to have space for max packet + some slack
     -- IP length is just UDP_length + 20 (bytes)
     signal UDP_length     : integer;
-    signal UDP_CRC, partial1, partial2, partial3 : unsigned(31 downto 0);
+    signal UDP_CRC, partial1, partial2 : unsigned(31 downto 0);
     signal IP_CRC         : unsigned(31 downto 0);
     signal watchdog_timer : unsigned(31 downto 0);
     signal watchdog_reset : std_logic;
@@ -574,9 +574,6 @@ begin
                     -- UDP length will be added twice for IP pseudo header
                     partial1 <= UDP_CRC + 2*len_aux + pkt_counter(39 downto 24);
 					partial2 <= (x"0000" & pkt_counter(23 downto  8)) + (x"0000" & pkt_counter( 7 downto  0) & unsigned(saved_tid));
-					--UDP_CRC <= UDP_CRC + 2*len_aux + 
-                    --           pkt_counter(39 downto 24) + pkt_counter(23 downto  8) +
-                    --           (pkt_counter( 7 downto  0) & unsigned(saved_tid));
                   else
                     substep <= 0;  -- reset substep counter
                     pkt_index<= pkt_index+1;
