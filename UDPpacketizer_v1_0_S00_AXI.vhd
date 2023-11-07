@@ -145,7 +145,8 @@ architecture arch_imp of UDPpacketizer_v1_0_S00_AXI is
     constant DEFAULT_DEST_IP          : std_logic_vector(31 downto 0) := x"C0A805FF";  -- broadcast: 192.168.5.255
     constant DEFAULT_DEST_MAC         : std_logic_vector(47 downto 0) := x"FF_FF_FF_FF_FF_FF";  -- broadcast
     constant DEFAULT_DEST_UDP_PORT    : std_logic_vector(15 downto 0) := x"13ED";  -- 5101
-    constant DEFAULT_WATCHDOG_TIMEOUT : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0) := x"0004C4B4"; -- = 312'500 decimal = 1 ms
+	-- default watchdog timeout is 1 ms at 312.5 MHz clock = 312500 cycles
+    constant DEFAULT_WATCHDOG_TIMEOUT : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(312500,C_S_AXI_DATA_WIDTH));
 
 begin
 	-- I/O Connections assignments
