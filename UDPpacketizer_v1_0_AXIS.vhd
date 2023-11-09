@@ -138,7 +138,7 @@ architecture implementation of UDPpacketizer_v1_0_AXIS is
     -- CRC is done on 16 bit word; we use a 32 bit accum to have space for max packet + some slack
     -- IP length is just UDP_length + 20 (bytes)
     signal UDP_length     : integer;
-    signal UDP_CRC, partial1, partial2 : unsigned(31 downto 0);
+    signal UDP_CRC, partial1, partial2, partial3 : unsigned(31 downto 0);
     signal IP_CRC         : unsigned(31 downto 0);
     signal watchdog_timer : unsigned(31 downto 0);
     signal watchdog_reset : std_logic;
@@ -285,8 +285,11 @@ begin
 	          --IP_CRC <= (others => '0');
 
               -- UDP CRC id optional, but we calculate it; it is done on all UDP data (header + payload) + IP pseudoheader
-              -- UDP_CRC is initialized in PREPARE_PADDING state
-              --UDP_CRC <= (others => '0');
+              -- to help timing closure, here we prepare partial sums that will be summed together in next state,
+              -- "PREPARE_PADDING", to initialize the UDP_CRC
+              partial1 <= (x"0000" & unsigned( saved_src_ip(31 downto 16))) + (x"0000" & unsigned( saved_src_ip(15 downto  0)));
+              partial2 <= (x"0000" & unsigned(saved_dest_ip(31 downto 16))) + (x"0000" & unsigned(saved_dest_ip(15 downto  0)));
+              partial3 <= x"00000011" + unsigned(saved_src_port) + unsigned(saved_dest_port);
 
               -- we need to wait for external enable before asserting rx_ready 
               rx_ready <= '0';
@@ -323,9 +326,8 @@ begin
                         + 20;
 
               -- initialize UDP CRC with known data
-              UDP_CRC <= unsigned( saved_src_ip(31 downto 16)) + unsigned( saved_src_ip(15 downto  0))+ 
-                         unsigned(saved_dest_ip(31 downto 16)) + unsigned(saved_dest_ip(15 downto  0))+ 
-                         x"00000011" + unsigned(saved_src_port) + unsigned(saved_dest_port);
+              UDP_CRC <= partial1 + partial2 + partial3;
+
               
 	          case( pkt_index+1 ) is
 
