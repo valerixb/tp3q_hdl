@@ -4,7 +4,7 @@
 -- deinterleaver, data recovery (oversampling phase picker),
 -- 4 to 10 gearbox, comma aligner
 --
--- latest rev jun 13 2023
+-- latest rev nov 9 2023
 --
 
 
@@ -75,6 +75,8 @@ signal comma_ptr          : natural range 0 to 9;
 signal out10_int          : std_logic_vector(9 downto 0);
 signal out10_valid_int    : std_logic;
 signal aligned_int, aligned_int_dly : std_logic;
+constant NOEDGES_TIMEOUT  : natural range 0 to 255 := 10;
+signal noedges_cntr       : natural range 0 to 255;
 
 
 begin
@@ -113,6 +115,7 @@ begin
           out10_int              <= (others=>'0');
           out10_valid_int        <= '0';
           aligned_int            <= '0';
+          noedges_cntr           <= 0;
           sample_vector          <= (others=>'0');
           sample_vector_len      <= 0;
         else
@@ -157,6 +160,7 @@ begin
             
               -- sample at the right phase (see notes for documentation)
               -- I use a variable to use latest value in case there are no transitions
+              noedges_cntr <= 0;  -- but see also the following "when others"
               case(edge_vec(i)) is
                 when "0010" => 
                   sample_vec_in(i)   <= rx_vec(i*4+1+2);
@@ -181,7 +185,15 @@ begin
                     when PH2 =>
                       sample_vec_in(i) <= rx_vec(i*4+1+2);
                   end case;
-                  
+                  -- increment "no valid edges" watchdog counter to detect link interruption
+                  if( aligned_int='1' ) then
+                    if( noedges_cntr /= NOEDGES_TIMEOUT ) then
+                      noedges_cntr <= noedges_cntr + 1;
+                    else
+                      noedges_cntr <= noedges_cntr;
+                    end if;
+                  end if;
+
               end case;
               
               -- record sampling phase for successive ADD/DROP check
@@ -267,7 +279,14 @@ begin
               elsif( (comma_search_buf(16 downto 7) = K28_5N) or (comma_search_buf(16 downto 7) = K28_5P) ) then  comma_ptr <=7; aligned_int<='1';
               elsif( (comma_search_buf(17 downto 8) = K28_5N) or (comma_search_buf(17 downto 8) = K28_5P) ) then  comma_ptr <=8; aligned_int<='1';
               elsif( (comma_search_buf(18 downto 9) = K28_5N) or (comma_search_buf(18 downto 9) = K28_5P) ) then  comma_ptr <=9; aligned_int<='1';
-              else comma_ptr <= comma_ptr; aligned_int <= aligned_int;
+              else 
+                comma_ptr <= comma_ptr;
+                -- if we don't see edges for some time, declare "lack of activity" and loss of alignment
+                if( noedges_cntr /= NOEDGES_TIMEOUT ) then 
+                  aligned_int <= aligned_int;
+                else
+                  aligned_int <= '0';
+                end if;
               end if;
             else
               comma_ptr <= comma_ptr; aligned_int <= aligned_int;
