@@ -1,7 +1,7 @@
 #
 # constraint file for timepix streaming project
 #
-# latest rev: sept 22 2023
+# latest rev: nov 21 2023
 #
 
 
@@ -78,13 +78,19 @@ set_clock_groups -name clk_async3 -asynchronous -group [get_clocks -of_objects [
 
 # HSSIO clocking from fabric
 #set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets project_1_i/txclk1]
-set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets {project_1_i/ext_clk_mngr/txclk_bufg/U0/BUFG_O[0]}]
-#set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets project_1_i/rxclk]
-set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets {project_1_i/ext_clk_mngr/rxclk_bufg/U0/BUFG_O[0]}]
+#set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets {project_1_i/ext_clk_mngr/txclk_bufg/U0/BUFG_O[0]}]
+set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets {project_1_i/ext_clk_mngr/div_by_2/U0/BUFGCE_O[0]}]
 
-# declare Si570 frequencies; 160 MHz => 6.25 ns
-create_clock -period 6.250 -name RxSi570 -waveform {0.000 3.125} [get_ports FMC_HPC0_CLK0_M2C_P]
-create_clock -period 6.250 -name TxSi570 -waveform {0.000 3.125} [get_ports USER_SI570_P]
+#set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets project_1_i/rxclk]
+#set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets {project_1_i/ext_clk_mngr/rxclk_bufg/U0/BUFG_O[0]}]
+set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets {project_1_i/ext_clk_mngr/div_by_2_to160MHz/U0/BUFGCE_O[0]}]
+
+## declare Si570 frequencies; 160 MHz => 6.25 ns
+#create_clock -period 6.250 -name RxSi570 -waveform {0.000 3.125} [get_ports FMC_HPC0_CLK0_M2C_P]
+#create_clock -period 6.250 -name TxSi570 -waveform {0.000 3.125} [get_ports USER_SI570_P]
+# declare Si570 frequencies; 320 MHz => 3.125 ns
+create_clock -period 3.125 -name RxSi570 -waveform {0.000 1.5625} [get_ports FMC_HPC0_CLK0_M2C_P]
+create_clock -period 3.125 -name TxSi570 -waveform {0.000 1.5625} [get_ports USER_SI570_P]
 #set_clock_groups -asynchronous -group [get_clocks -include_generated_clocks "TxSi570"] -group [get_clocks -include_generated_clocks "RxSi570"]
 set_clock_groups -asynchronous -group [get_clocks -include_generated_clocks RxSi570]
 set_clock_groups -asynchronous -group [get_clocks -include_generated_clocks TxSi570]
@@ -92,7 +98,8 @@ set_clock_groups -asynchronous -group [get_clocks -include_generated_clocks TxSi
 
 # declare RIU clock asynchronous from TX HSSIO PLL0 CLKOUT0: they have the same freq but not the same phase.
 #set_clock_groups -name tx_riu -asynchronous -group [get_clocks -of_objects [get_pins {project_1_i/ext_clk_mngr/div_by_2/U0/USE_BUFGCE_DIV2.GEN_BUFGCE_DIV2[0].BUFGCE_DIV2_I/O}]] -group [get_clocks -of_objects [get_pins {project_1_i/diagnostic_HSSIO_TX/HSSIO_TX_0/U0/HSSIO_TX_instance/inst/top_inst/bs_ctrl_top_inst/BITSLICE_CTRL[2].bs_ctrl_inst/RX_DIV4_CLK_Q}]]
-set_clock_groups -name tx_riu -asynchronous -group [get_clocks -of_objects [get_pins {project_1_i/ext_clk_mngr/div_by_2/U0/USE_BUFGCE_DIV2.GEN_BUFGCE_DIV2[0].BUFGCE_DIV2_I/O}]] -group [get_clocks -of_objects [get_pins {project_1_i/diagnostic_HSSIO_TX/HSSIO_TX_0/U0/HSSIO_TX_instance/inst/top_inst/bs_ctrl_top_inst/BITSLICE_CTRL[7].bs_ctrl_inst/RX_DIV4_CLK_Q}]]
+#set_clock_groups -name tx_riu -asynchronous -group [get_clocks -of_objects [get_pins {project_1_i/ext_clk_mngr/div_by_2/U0/USE_BUFGCE_DIV2.GEN_BUFGCE_DIV2[0].BUFGCE_DIV2_I/O}]] -group [get_clocks -of_objects [get_pins {project_1_i/diagnostic_HSSIO_TX/HSSIO_TX_0/U0/HSSIO_TX_instance/inst/top_inst/bs_ctrl_top_inst/BITSLICE_CTRL[7].bs_ctrl_inst/RX_DIV4_CLK_Q}]]
+set_clock_groups -name tx_riu -asynchronous -group [get_clocks -of_objects [get_pins {project_1_i/ext_clk_mngr/div_by_4/U0/USE_BUFGCE_DIV4.GEN_BUFGCE_DIV4[0].BUFGCE_DIV4_I/O}]] -group [get_clocks -of_objects [get_pins {project_1_i/diagnostic_HSSIO_TX/HSSIO_TX_0/U0/HSSIO_TX_instance/inst/top_inst/bs_ctrl_top_inst/BITSLICE_CTRL[7].bs_ctrl_inst/RX_DIV4_CLK_Q}]]
 
 # specify IO standard for inferred pin slice; no need to drive anything, but the HSSIO wizard needs it
 #set_property PULLDOWN true [get_ports inferred_bitslice_port_0]
