@@ -138,7 +138,7 @@ architecture implementation of UDPpacketizer_v1_0_AXIS is
     -- CRC is done on 16 bit word; we use a 32 bit accum to have space for max packet + some slack
     -- IP length is just UDP_length + 20 (bytes)
     signal UDP_length     : integer;
-    signal UDP_CRC, partial1, partial2, partial3 : unsigned(31 downto 0);
+    signal UDP_CRC, partial1, partial2, partial3, partial4 : unsigned(31 downto 0);
     signal IP_CRC         : unsigned(31 downto 0);
     signal watchdog_timer : unsigned(31 downto 0);
     signal watchdog_reset : std_logic;
@@ -259,6 +259,7 @@ begin
 		  partial1 <= (others => '0');
 		  partial2 <= (others => '0');
 		  partial3 <= (others => '0');
+		  partial4 <= (others => '0');
 	    else                                                                                    
           buf_en <= '1';
 	      case (sm_exec_state) is                   
@@ -292,6 +293,7 @@ begin
               partial1 <= (x"0000" & unsigned( saved_src_ip(31 downto 16))) + (x"0000" & unsigned( saved_src_ip(15 downto  0)));
               partial2 <= (x"0000" & unsigned(saved_dest_ip(31 downto 16))) + (x"0000" & unsigned(saved_dest_ip(15 downto  0)));
               partial3 <= x"00000011" + unsigned(saved_src_port) + unsigned(saved_dest_port);
+			  partial4 <= (others => '0');
 
               -- we need to wait for external enable before asserting rx_ready 
               rx_ready <= '0';
@@ -361,6 +363,8 @@ begin
 	          busy <= '0';
 			  partial1 <= (others => '0');
 			  partial2 <= (others => '0');
+			  partial3 <= (others => '0');
+			  partial4 <= (others => '0');
 	          if(PKTZR_enable = '1') then
                 sm_exec_state <= FILLING_PKT;
               else
@@ -387,9 +391,9 @@ begin
 	            -- then all bytes are stored irrespective of TKEEP, 
 	            -- meaning that we support unaligned transfer only if it's the last
 	            -- putting TUSER to 0000_0001 while asserting TLAST forces an end-of-packet
-	            if( ((rx_last='1') and ((UDP_length + add_length +8) > BUF_FULL_THR)) or
+	            if( ((rx_last='1') and ((UDP_length + 16) > BUF_FULL_THR)) or
 	                ((rx_last='1') and (rx_tuser="00000001")) or  
-	                ((UDP_length + add_length +8) > MAX_PKT_DATA) 
+	                ((UDP_length + 16) > MAX_PKT_DATA) 
 	              ) then
 	              add_length:=tkeep_decode( S_AXIS_TKEEP );
 	              -- put to 0 data bytes not enabled in tkeep
@@ -423,12 +427,12 @@ begin
 	            UDP_length <= UDP_length + add_length;
 	            -- must do a net2host to calculate the CRC
 				-- CRC sum split into two partial sums to help timing closure avoiding long carry chains
-				partial1 <= partial1 
-				           + (unsigned(aux_datain(55 downto 48)) & unsigned(aux_datain(63 downto 56)))
-				           + (unsigned(aux_datain(39 downto 32)) & unsigned(aux_datain(47 downto 40)));
-				partial2 <= partial2
-	                       + (unsigned(aux_datain(23 downto 16)) & unsigned(aux_datain(31 downto 24))) 
-	                       + (unsigned(aux_datain( 7 downto  0)) & unsigned(aux_datain(15 downto  8))); 
+				partial1 <=  (x"0000" & unsigned(aux_datain(55 downto 48)) & unsigned(aux_datain(63 downto 56)))
+				           + (x"0000" & unsigned(aux_datain(39 downto 32)) & unsigned(aux_datain(47 downto 40)));
+				partial2 <=  (x"0000" & unsigned(aux_datain(23 downto 16)) & unsigned(aux_datain(31 downto 24))) 
+	                       + (x"0000" & unsigned(aux_datain( 7 downto  0)) & unsigned(aux_datain(15 downto  8))); 
+				partial3 <= partial3 + partial1;
+				partial4 <= partial4 + partial2;
 	            pkt_index <= pkt_index +1;
 
                 -- update buffer
@@ -482,8 +486,8 @@ begin
 	          case( pkt_index+1 ) is
 	            
 	            when 1 =>
-				  -- complete CRC calculation from "FILLING_PKT" partial sums:
-				  UDP_CRC <= UDP_CRC + partial1 + partial2;
+				  -- complete CRC calculation from "FILLING_PKT" partial sums (part1/2):
+				  UDP_CRC <= UDP_CRC + partial3;
 
 	              pkt_word( 7 downto  0) :=  saved_src_mac(31 downto 24);
 	              pkt_word(15 downto  8) :=  saved_src_mac(23 downto 16);
@@ -505,6 +509,9 @@ begin
 	              pkt_index<= pkt_index+1;
 
   	            when 2 =>
+				  -- complete CRC calculation from "FILLING_PKT" partial sums (part2/2):
+				  UDP_CRC <= UDP_CRC + partial4;
+
                   -- IP length
                   len_aux := to_unsigned(UDP_length,16) + 20;
                   pkt_word( 7 downto  0) := std_logic_vector(len_aux(15 downto  8));
