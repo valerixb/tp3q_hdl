@@ -12,7 +12,7 @@
 -- passthru stream is not registered, to avoid adding latency
 -- monitor port is registered, to help timig closure
 --
--- latest rev nov 22 2023
+-- latest rev dec 13 2023
 --
 
 library ieee;
@@ -77,7 +77,7 @@ begin
           tdata_buf  <= instream_tdata;
           tstrb_buf  <= instream_tstrb;
           tlast_buf  <= instream_tlast;
-          tvalid_buf <= instream_tvalid;
+          tvalid_buf <= instream_tvalid and outstream_tready;
         end if; -- if not reset
       end if; -- if clk edge
     end process monitor_reg;
