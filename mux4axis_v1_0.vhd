@@ -4,7 +4,7 @@
 -- I made it just because the Xilinx AXIS Interconnect IP does not work
 -- common clock and reset
 --
--- latest rev apr 15 2024
+-- latest rev apr 17 2024
 --
 
 library ieee;
@@ -106,7 +106,7 @@ robin: process(clk, resetn)
       else
         if( (chan_sel=0) and 
             ( 
-              ( (inprogress='1') and (instream0_tlast='1') and (instream0_tvalid='1') and (outstream_tready='1') ) 
+              ( (inprogress='1') and (outreg_tlast='1') and (outreg_tvalid='1') and (outstream_tready='1') ) 
               or
               ( (inprogress='0') and (instream0_tvalid='0') )
             )
@@ -116,7 +116,7 @@ robin: process(clk, resetn)
           
         elsif( (chan_sel=1) and 
             ( 
-              ( (inprogress='1') and (instream1_tlast='1') and (instream1_tvalid='1') and (outstream_tready='1') ) 
+              ( (inprogress='1') and (outreg_tlast='1') and (outreg_tvalid='1') and (outstream_tready='1') ) 
               or
               ( (inprogress='0') and (instream1_tvalid='0') )
             )
@@ -126,7 +126,7 @@ robin: process(clk, resetn)
 
         elsif( (chan_sel=2) and 
             ( 
-              ( (inprogress='1') and (instream2_tlast='1') and (instream2_tvalid='1') and (outstream_tready='1') ) 
+              ( (inprogress='1') and (outreg_tlast='1') and (outreg_tvalid='1') and (outstream_tready='1') ) 
               or
               ( (inprogress='0') and (instream2_tvalid='0') )
             )
@@ -136,7 +136,7 @@ robin: process(clk, resetn)
 
         elsif( (chan_sel=3) and 
             ( 
-              ( (inprogress='1') and (instream3_tlast='1') and (instream3_tvalid='1') and (outstream_tready='1') ) 
+              ( (inprogress='1') and (outreg_tlast='1') and (outreg_tvalid='1') and (outstream_tready='1') ) 
               or
               ( (inprogress='0') and (instream3_tvalid='0') )
             )
@@ -159,64 +159,58 @@ switchboard: process(clk, resetn)
       if( resetn='0' ) then
         outreg_tvalid <= '0';
       else
-        case chan_sel is
-          when 0 =>
-            outreg_tlast  <= instream0_tlast;
-            outreg_tvalid <= instream0_tvalid;
-            if(outstream_tready='1') then
+        if(outstream_tready='1') then
+          case chan_sel is
+            when 0 =>
+              outreg_tlast  <= instream0_tlast;
+              outreg_tvalid <= instream0_tvalid;
               outreg_tdata  <= instream0_tdata;
-            else
-              outreg_tdata  <= outreg_tdata;
-            end if;
-            outreg_tstrb  <= instream0_tstrb;
-            outreg_tdest  <= instream0_tdest;
-            outreg_tid    <= instream0_tid;
-            outreg_tuser  <= instream0_tuser;
-          when 1 =>
-            outreg_tlast  <= instream1_tlast;
-            outreg_tvalid <= instream1_tvalid;
-            if(outstream_tready='1') then
+              outreg_tstrb  <= instream0_tstrb;
+              outreg_tdest  <= instream0_tdest;
+              outreg_tid    <= instream0_tid;
+              outreg_tuser  <= instream0_tuser;
+            when 1 =>
+              outreg_tlast  <= instream1_tlast;
+              outreg_tvalid <= instream1_tvalid;
               outreg_tdata  <= instream1_tdata;
-            else
-              outreg_tdata  <= outreg_tdata;
-            end if;
-            outreg_tstrb  <= instream1_tstrb;
-            outreg_tdest  <= instream1_tdest;
-            outreg_tid    <= instream1_tid;
-            outreg_tuser  <= instream1_tuser;
-          when 2 =>
-            outreg_tlast  <= instream2_tlast;
-            outreg_tvalid <= instream2_tvalid;
-            if(outstream_tready='1') then
+              outreg_tstrb  <= instream1_tstrb;
+              outreg_tdest  <= instream1_tdest;
+              outreg_tid    <= instream1_tid;
+              outreg_tuser  <= instream1_tuser;
+            when 2 =>
+              outreg_tlast  <= instream2_tlast;
+              outreg_tvalid <= instream2_tvalid;
               outreg_tdata  <= instream2_tdata;
-            else
-              outreg_tdata  <= outreg_tdata;
-            end if;
-            outreg_tstrb  <= instream2_tstrb;
-            outreg_tdest  <= instream2_tdest;
-            outreg_tid    <= instream2_tid;
-            outreg_tuser  <= instream2_tuser;
-          when 3 =>
-            outreg_tlast  <= instream3_tlast;
-            outreg_tvalid <= instream3_tvalid;
-            if(outstream_tready='1') then
+              outreg_tstrb  <= instream2_tstrb;
+              outreg_tdest  <= instream2_tdest;
+              outreg_tid    <= instream2_tid;
+              outreg_tuser  <= instream2_tuser;
+            when 3 =>
+              outreg_tlast  <= instream3_tlast;
+              outreg_tvalid <= instream3_tvalid;
               outreg_tdata  <= instream3_tdata;
-            else
+              outreg_tstrb  <= instream3_tstrb;
+              outreg_tdest  <= instream3_tdest;
+              outreg_tid    <= instream3_tid;
+              outreg_tuser  <= instream3_tuser;
+            when others =>
+              outreg_tlast  <= outreg_tlast;            
+              outreg_tvalid <= '0';
               outreg_tdata  <= outreg_tdata;
-            end if;
-            outreg_tstrb  <= instream3_tstrb;
-            outreg_tdest  <= instream3_tdest;
-            outreg_tid    <= instream3_tid;
-            outreg_tuser  <= instream3_tuser;
-          when others =>
-            outreg_tlast  <= outreg_tlast;            
-            outreg_tvalid <= '0';
-            outreg_tdata  <= outreg_tdata;
-            outreg_tstrb  <= outreg_tstrb;
-            outreg_tdest  <= outreg_tdest;
-            outreg_tid    <= outreg_tid;
-            outreg_tuser  <= outreg_tuser;
-        end case;
+              outreg_tstrb  <= outreg_tstrb;
+              outreg_tdest  <= outreg_tdest;
+              outreg_tid    <= outreg_tid;
+              outreg_tuser  <= outreg_tuser;
+          end case;
+        else -- output not ready
+          outreg_tlast  <= outreg_tlast;            
+          outreg_tvalid <= outreg_tvalid;
+          outreg_tdata  <= outreg_tdata;
+          outreg_tstrb  <= outreg_tstrb;
+          outreg_tdest  <= outreg_tdest;
+          outreg_tid    <= outreg_tid;
+          outreg_tuser  <= outreg_tuser;
+        end if;  -- if output ready
       end if; -- if not reset
     end if; -- if clk edge
   end process switchboard;
